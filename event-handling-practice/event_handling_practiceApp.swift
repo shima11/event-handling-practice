@@ -6,12 +6,26 @@
 //
 
 import SwiftUI
+import AVFoundation
 
 @main
 struct event_handling_practiceApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
+
+  @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
+  var body: some Scene {
+    WindowGroup {
+      ContentView()
     }
+  }
+}
+
+class AppDelegate: UIResponder, UIApplicationDelegate {
+  func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+
+    let session = AVAudioSession.sharedInstance()
+    try! session.setActive(true, options: .notifyOthersOnDeactivation)
+
+    return true
+  }
 }
