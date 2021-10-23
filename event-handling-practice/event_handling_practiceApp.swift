@@ -50,14 +50,34 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
   @objc
   func handleInterruption(_ notification: NSNotification) {
-    print("handleInterruption:", notification)
-//    store.handleInterruptionText = 
+    guard
+      let userInfo = notification.userInfo,
+      let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+      let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
+        return
+      }
+
+    if type == .began {
+      // interruptionが開始した時(電話がかかってきたなど)
+      store.handleInterruptionText = "handle interruption: began"
+    }
+    else if type == .ended {
+      // interruptionが終了した時の処理
+      if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
+        let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+        if options.contains(.shouldResume) {
+          // Interruption Ended - playback should resume
+          store.handleInterruptionText = "handle interruption: ended should resume"
+        } else {
+          // Interruption Ended - playback should NOT resume
+          store.handleInterruptionText = "handle interruption: ended should not resume"
+        }
+      }
+    }
   }
 
   @objc
   func audioSessionRouteChanged(_ notification: NSNotification) {
-
-    print("audio session route changed:")
 
     guard
       let userInfo = notification.userInfo,
