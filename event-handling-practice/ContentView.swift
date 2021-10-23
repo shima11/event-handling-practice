@@ -8,14 +8,22 @@
 import SwiftUI
 
 struct ContentView: View {
+
+  @ObservedObject var store: DefaultsStore
+
   var body: some View {
-    Text("Hello, world!")
-      .padding()
+    VStack {
+      Text("Event Handling Practice")
+        .font(.title)
+      Text(store.audioSessionRouteChangedText)
+      Text(store.handleInterruptionText)
+    }
+    .padding()
   }
 }
 
 struct ContentView_Previews: PreviewProvider {
   static var previews: some View {
-    ContentView()
+    ContentView(store: .init())
   }
 }
