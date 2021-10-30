@@ -37,12 +37,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     let center = NotificationCenter.default
 
     // MARK: AVAudioSession
-
+    
     center.addObserver(self, selector: #selector(interruptionNotification(_:)), name: AVAudioSession.interruptionNotification, object: nil)
     center.addObserver(self, selector: #selector(routeChangeNotification(_:)), name: AVAudioSession.routeChangeNotification, object: nil)
+    
     center.addObserver(self, selector: #selector(mediaServicesWereLostNotification(_:)), name: AVAudioSession.mediaServicesWereLostNotification, object: nil)
     center.addObserver(self, selector: #selector(mediaServicesWereResetNotification(_:)), name: AVAudioSession.mediaServicesWereResetNotification, object: nil)
+
+    // 他のアプリで音楽が再生されているかどうか
+    // AVAudioSession.sharedInstance().isOtherAudioPlaying
     center.addObserver(self, selector: #selector(silenceSecondaryAudioHintNotification(_:)), name: AVAudioSession.silenceSecondaryAudioHintNotification, object: nil)
+
     center.addObserver(self, selector: #selector(spatialPlaybackCapabilitiesChangedNotification(_:)), name: AVAudioSession.spatialPlaybackCapabilitiesChangedNotification, object: nil)
 
     return true
@@ -83,6 +88,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return
       }
 
+    print("routeChangeNotification:", reason)
+
     switch reason {
     case .newDeviceAvailable:
       store.audioSessionRouteChangedText = "audio session route changed: newDeviceAvailable"
@@ -93,7 +100,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         break
       }
     case .oldDeviceUnavailable:
-      print("audio session route changed: oldDeviceUnavailable")
       if let previousRoute =
           userInfo[AVAudioSessionRouteChangePreviousRouteKey] as? AVAudioSessionRouteDescription {
         for output in previousRoute.outputs where output.portType == AVAudioSession.Port.headphones {
@@ -125,9 +131,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   @objc func mediaServicesWereResetNotification(_ notification: NSNotification) {
 
   }
+
+  ///　他アプリでのサウンド再生／停止を監視
   @objc func silenceSecondaryAudioHintNotification(_ notification: NSNotification) {
 
+    guard
+      let userInfo = notification.userInfo,
+      let typeValue = userInfo[AVAudioSessionSilenceSecondaryAudioHintTypeKey] as? UInt,
+      let type = AVAudioSession.SilenceSecondaryAudioHintType(rawValue: typeValue) else {
+        return
+      }
+    switch type {
+    case .begin:
+      print("silenceSecondaryAudioHintNotification: began")
+    case .end:
+      print("silenceSecondaryAudioHintNotification: end")
+    @unknown default:
+      fatalError()
+    }
   }
+
   @objc func spatialPlaybackCapabilitiesChangedNotification(_ notification: NSNotification) {
 
   }
