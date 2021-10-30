@@ -8,6 +8,11 @@
 import SwiftUI
 import AVFoundation
 
+// https://developer.apple.com/documentation/avfaudio/avaudiosession/responding_to_audio_session_route_changes
+// https://developer.apple.com/documentation/avfaudio/avaudiosession/responding_to_audio_session_interruptions
+// https://qiita.com/_daisuke0802/items/d6f68f3c5cc021bba7c5#4-%E3%83%98%E3%83%83%E3%83%89%E3%83%95%E3%82%A9%E3%83%B3%E3%81%AE%E6%8A%9C%E3%81%8D%E5%B7%AE%E3%81%97
+// https://nackpan.net/blog/2015/09/29/ios-swift-phone-call-and-route-change/
+
 @main
 struct event_handling_practiceApp: App {
 
@@ -31,25 +36,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     let center = NotificationCenter.default
 
-    center.addObserver(
-      self,
-      selector: #selector(handleInterruption(_:)),
-      name: AVAudioSession.interruptionNotification,
-      object: AVAudioSession.sharedInstance
-    )
+    // MARK: AVAudioSession
 
-    center.addObserver(
-      self,
-      selector: #selector(audioSessionRouteChanged(_:)),
-      name: AVAudioSession.routeChangeNotification,
-      object: nil
-    )
+    center.addObserver(self, selector: #selector(interruptionNotification(_:)), name: AVAudioSession.interruptionNotification, object: nil)
+    center.addObserver(self, selector: #selector(routeChangeNotification(_:)), name: AVAudioSession.routeChangeNotification, object: nil)
+    center.addObserver(self, selector: #selector(mediaServicesWereLostNotification(_:)), name: AVAudioSession.mediaServicesWereLostNotification, object: nil)
+    center.addObserver(self, selector: #selector(mediaServicesWereResetNotification(_:)), name: AVAudioSession.mediaServicesWereResetNotification, object: nil)
+    center.addObserver(self, selector: #selector(silenceSecondaryAudioHintNotification(_:)), name: AVAudioSession.silenceSecondaryAudioHintNotification, object: nil)
+    center.addObserver(self, selector: #selector(spatialPlaybackCapabilitiesChangedNotification(_:)), name: AVAudioSession.spatialPlaybackCapabilitiesChangedNotification, object: nil)
 
     return true
   }
 
-  @objc
-  func handleInterruption(_ notification: NSNotification) {
+  @objc func interruptionNotification(_ notification: NSNotification) {
     guard
       let userInfo = notification.userInfo,
       let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
@@ -76,9 +75,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
   }
 
-  @objc
-  func audioSessionRouteChanged(_ notification: NSNotification) {
-
+  @objc func routeChangeNotification(_ notification: NSNotification) {
     guard
       let userInfo = notification.userInfo,
       let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
@@ -120,6 +117,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     @unknown default:
       break
     }
+  }
+
+  @objc func mediaServicesWereLostNotification(_ notification: NSNotification) {
+
+  }
+  @objc func mediaServicesWereResetNotification(_ notification: NSNotification) {
+
+  }
+  @objc func silenceSecondaryAudioHintNotification(_ notification: NSNotification) {
+
+  }
+  @objc func spatialPlaybackCapabilitiesChangedNotification(_ notification: NSNotification) {
 
   }
 
