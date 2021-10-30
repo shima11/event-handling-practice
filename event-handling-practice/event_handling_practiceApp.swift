@@ -37,122 +37,111 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     let center = NotificationCenter.default
 
     // MARK: AVAudioSession
-    
-    center.addObserver(self, selector: #selector(interruptionNotification(_:)), name: AVAudioSession.interruptionNotification, object: nil)
-    center.addObserver(self, selector: #selector(routeChangeNotification(_:)), name: AVAudioSession.routeChangeNotification, object: nil)
-    
-    center.addObserver(self, selector: #selector(mediaServicesWereLostNotification(_:)), name: AVAudioSession.mediaServicesWereLostNotification, object: nil)
-    center.addObserver(self, selector: #selector(mediaServicesWereResetNotification(_:)), name: AVAudioSession.mediaServicesWereResetNotification, object: nil)
+
+    center.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: nil) { [weak self] notification in
+      guard
+        let self = self,
+        let userInfo = notification.userInfo,
+        let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+        let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
+          return
+        }
+
+      if type == .began {
+        // interruptionが開始した時(電話がかかってきたなど)
+        self.store.handleInterruptionText = "handle interruption: began"
+      }
+      else if type == .ended {
+        // interruptionが終了した時の処理
+        if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
+          let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+          if options.contains(.shouldResume) {
+            // Interruption Ended - playback should resume
+            self.store.handleInterruptionText = "handle interruption: ended should resume"
+          } else {
+            // Interruption Ended - playback should NOT resume
+            self.store.handleInterruptionText = "handle interruption: ended should not resume"
+          }
+        }
+      }
+    }
+    center.addObserver(forName: AVAudioSession.routeChangeNotification, object: nil, queue: nil) { [weak self] notification in
+      guard
+        let self = self,
+        let userInfo = notification.userInfo,
+        let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+        let reason = AVAudioSession.RouteChangeReason(rawValue:reasonValue) else {
+          return
+        }
+
+      print("routeChangeNotification:", reason)
+
+      switch reason {
+      case .newDeviceAvailable:
+        self.store.audioSessionRouteChangedText = "audio session route changed: newDeviceAvailable"
+        let currentRoute = AVAudioSession.sharedInstance().currentRoute
+        for output in currentRoute.outputs where output.portType == AVAudioSession.Port.headphones {
+          // ヘッドフォンがつながった
+          self.store.audioSessionRouteChangedText = "audio session route changed: available headphones"
+          break
+        }
+      case .oldDeviceUnavailable:
+        if let previousRoute =
+            userInfo[AVAudioSessionRouteChangePreviousRouteKey] as? AVAudioSessionRouteDescription {
+          for output in previousRoute.outputs where output.portType == AVAudioSession.Port.headphones {
+            // ヘッドフォンが外れた
+            self.store.audioSessionRouteChangedText = "audio session route changed: unavailable headphones"
+            break
+          }
+        }
+      case .unknown:
+        self.store.audioSessionRouteChangedText = "audio session route changed: unknown"
+      case .categoryChange:
+        self.store.audioSessionRouteChangedText = "audio session route changed: categoryChanged"
+      case .override:
+        self.store.audioSessionRouteChangedText = "audio session route changed: override"
+      case .wakeFromSleep:
+        self.store.audioSessionRouteChangedText = "audio session route changed: wakeFromSleep"
+      case .noSuitableRouteForCategory:
+        self.store.audioSessionRouteChangedText = "audio session route changed: noSuitableRouteForCategory"
+      case .routeConfigurationChange:
+        self.store.audioSessionRouteChangedText = "audio session route changed: routeConfigurationChanged"
+      @unknown default:
+        break
+      }
+    }
+
+    center.addObserver(forName: AVAudioSession.mediaServicesWereLostNotification, object: nil, queue: nil) { notification in
+
+    }
+    center.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: nil, queue: nil) { notification in
+
+    }
 
     // 他のアプリで音楽が再生されているかどうか
     // AVAudioSession.sharedInstance().isOtherAudioPlaying
-    center.addObserver(self, selector: #selector(silenceSecondaryAudioHintNotification(_:)), name: AVAudioSession.silenceSecondaryAudioHintNotification, object: nil)
+    center.addObserver(forName: AVAudioSession.silenceSecondaryAudioHintNotification, object: nil, queue: nil) { notification in
+      guard
+        let userInfo = notification.userInfo,
+        let typeValue = userInfo[AVAudioSessionSilenceSecondaryAudioHintTypeKey] as? UInt,
+        let type = AVAudioSession.SilenceSecondaryAudioHintType(rawValue: typeValue) else {
+          return
+        }
+      switch type {
+      case .begin:
+        print("silenceSecondaryAudioHintNotification: began")
+      case .end:
+        print("silenceSecondaryAudioHintNotification: end")
+      @unknown default:
+        fatalError()
+      }
+    }
+    
+    center.addObserver(forName: AVAudioSession.spatialPlaybackCapabilitiesChangedNotification, object: nil, queue: nil) { notification in
 
-    center.addObserver(self, selector: #selector(spatialPlaybackCapabilitiesChangedNotification(_:)), name: AVAudioSession.spatialPlaybackCapabilitiesChangedNotification, object: nil)
+    }
 
     return true
-  }
-
-  @objc func interruptionNotification(_ notification: NSNotification) {
-    guard
-      let userInfo = notification.userInfo,
-      let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
-      let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
-        return
-      }
-
-    if type == .began {
-      // interruptionが開始した時(電話がかかってきたなど)
-      store.handleInterruptionText = "handle interruption: began"
-    }
-    else if type == .ended {
-      // interruptionが終了した時の処理
-      if let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt {
-        let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
-        if options.contains(.shouldResume) {
-          // Interruption Ended - playback should resume
-          store.handleInterruptionText = "handle interruption: ended should resume"
-        } else {
-          // Interruption Ended - playback should NOT resume
-          store.handleInterruptionText = "handle interruption: ended should not resume"
-        }
-      }
-    }
-  }
-
-  @objc func routeChangeNotification(_ notification: NSNotification) {
-    guard
-      let userInfo = notification.userInfo,
-      let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
-      let reason = AVAudioSession.RouteChangeReason(rawValue:reasonValue) else {
-        return
-      }
-
-    print("routeChangeNotification:", reason)
-
-    switch reason {
-    case .newDeviceAvailable:
-      store.audioSessionRouteChangedText = "audio session route changed: newDeviceAvailable"
-      let currentRoute = AVAudioSession.sharedInstance().currentRoute
-      for output in currentRoute.outputs where output.portType == AVAudioSession.Port.headphones {
-        // ヘッドフォンがつながった
-        store.audioSessionRouteChangedText = "audio session route changed: available headphones"
-        break
-      }
-    case .oldDeviceUnavailable:
-      if let previousRoute =
-          userInfo[AVAudioSessionRouteChangePreviousRouteKey] as? AVAudioSessionRouteDescription {
-        for output in previousRoute.outputs where output.portType == AVAudioSession.Port.headphones {
-          // ヘッドフォンが外れた
-          store.audioSessionRouteChangedText = "audio session route changed: unavailable headphones"
-          break
-        }
-      }
-    case .unknown:
-      store.audioSessionRouteChangedText = "audio session route changed: unknown"
-    case .categoryChange:
-      store.audioSessionRouteChangedText = "audio session route changed: categoryChanged"
-    case .override:
-      store.audioSessionRouteChangedText = "audio session route changed: override"
-    case .wakeFromSleep:
-      store.audioSessionRouteChangedText = "audio session route changed: wakeFromSleep"
-    case .noSuitableRouteForCategory:
-      store.audioSessionRouteChangedText = "audio session route changed: noSuitableRouteForCategory"
-    case .routeConfigurationChange:
-      store.audioSessionRouteChangedText = "audio session route changed: routeConfigurationChanged"
-    @unknown default:
-      break
-    }
-  }
-
-  @objc func mediaServicesWereLostNotification(_ notification: NSNotification) {
-
-  }
-  @objc func mediaServicesWereResetNotification(_ notification: NSNotification) {
-
-  }
-
-  ///　他アプリでのサウンド再生／停止を監視
-  @objc func silenceSecondaryAudioHintNotification(_ notification: NSNotification) {
-
-    guard
-      let userInfo = notification.userInfo,
-      let typeValue = userInfo[AVAudioSessionSilenceSecondaryAudioHintTypeKey] as? UInt,
-      let type = AVAudioSession.SilenceSecondaryAudioHintType(rawValue: typeValue) else {
-        return
-      }
-    switch type {
-    case .begin:
-      print("silenceSecondaryAudioHintNotification: began")
-    case .end:
-      print("silenceSecondaryAudioHintNotification: end")
-    @unknown default:
-      fatalError()
-    }
-  }
-
-  @objc func spatialPlaybackCapabilitiesChangedNotification(_ notification: NSNotification) {
-
   }
 
 }
