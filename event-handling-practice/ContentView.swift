@@ -12,13 +12,22 @@ struct ContentView: View {
   @ObservedObject var store: DefaultsStore
 
   var body: some View {
-    VStack {
-      Text("Event Handling Practice")
-        .font(.title)
-      Text(store.audioSessionRouteChangedText)
-      Text(store.handleInterruptionText)
+    NavigationView {
+      ScrollView {
+        VStack(alignment: .leading, spacing: 8) {
+          HStack {
+            Text("audio session route changed:\n").bold() + Text(store.audioSessionRouteChangedText)
+            Spacer()
+          }
+          HStack {
+            Text("interruption:\n").bold() + Text(store.handleInterruptionText)
+            Spacer()
+          }
+        }
+        .padding()
+      }
+      .navigationTitle(Text("Event Handling Practice"))
     }
-    .padding()
   }
 }
 

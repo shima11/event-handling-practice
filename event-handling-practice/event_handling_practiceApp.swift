@@ -57,10 +57,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
           let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
           if options.contains(.shouldResume) {
             // Interruption Ended - playback should resume
-            self.store.handleInterruptionText = "handle interruption: ended should resume"
+            self.store.handleInterruptionText = "ended should resume"
           } else {
             // Interruption Ended - playback should NOT resume
-            self.store.handleInterruptionText = "handle interruption: ended should not resume"
+            self.store.handleInterruptionText = "ended should not resume"
           }
         }
       }
@@ -76,36 +76,47 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
       print("routeChangeNotification:", reason)
 
+      // イヤホンのポート一覧（有線、Bluetooth、...）
+      let outputPorts: [AVAudioSession.Port] = [
+        .headphones,
+        .bluetoothA2DP,
+        .bluetoothLE,
+        .bluetoothHFP,
+      ]
+
       switch reason {
       case .newDeviceAvailable:
-        self.store.audioSessionRouteChangedText = "audio session route changed: newDeviceAvailable"
+        self.store.audioSessionRouteChangedText = "newDeviceAvailable"
         let currentRoute = AVAudioSession.sharedInstance().currentRoute
-        for output in currentRoute.outputs where output.portType == AVAudioSession.Port.headphones {
+        print("current inputs:", currentRoute.inputs, "current outputs:", currentRoute.outputs)
+        for output in currentRoute.outputs where outputPorts.contains(output.portType) {
           // ヘッドフォンがつながった
-          self.store.audioSessionRouteChangedText = "audio session route changed: available headphones"
+          self.store.audioSessionRouteChangedText = "available\n\(output.portType)\n\(output.portName)"
           break
         }
       case .oldDeviceUnavailable:
         if let previousRoute =
             userInfo[AVAudioSessionRouteChangePreviousRouteKey] as? AVAudioSessionRouteDescription {
-          for output in previousRoute.outputs where output.portType == AVAudioSession.Port.headphones {
+          self.store.audioSessionRouteChangedText = "oldDeviceUnavailable"
+          print("pre inputs:", previousRoute.inputs, "pre outputs:", previousRoute.outputs)
+          for output in previousRoute.outputs where outputPorts.contains(output.portType) {
             // ヘッドフォンが外れた
-            self.store.audioSessionRouteChangedText = "audio session route changed: unavailable headphones"
+            self.store.audioSessionRouteChangedText = "unavailable\n\(output.portType)\n\(output.portName)"
             break
           }
         }
       case .unknown:
-        self.store.audioSessionRouteChangedText = "audio session route changed: unknown"
+        self.store.audioSessionRouteChangedText = "unknown"
       case .categoryChange:
-        self.store.audioSessionRouteChangedText = "audio session route changed: categoryChanged"
+        self.store.audioSessionRouteChangedText = "categoryChanged"
       case .override:
-        self.store.audioSessionRouteChangedText = "audio session route changed: override"
+        self.store.audioSessionRouteChangedText = "override"
       case .wakeFromSleep:
-        self.store.audioSessionRouteChangedText = "audio session route changed: wakeFromSleep"
+        self.store.audioSessionRouteChangedText = "wakeFromSleep"
       case .noSuitableRouteForCategory:
-        self.store.audioSessionRouteChangedText = "audio session route changed: noSuitableRouteForCategory"
+        self.store.audioSessionRouteChangedText = "noSuitableRouteForCategory"
       case .routeConfigurationChange:
-        self.store.audioSessionRouteChangedText = "audio session route changed: routeConfigurationChanged"
+        self.store.audioSessionRouteChangedText = "routeConfigurationChanged"
       @unknown default:
         break
       }
@@ -148,8 +159,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 class DefaultsStore: ObservableObject {
 
-  @Published var audioSessionRouteChangedText: String = "none"
-  @Published var handleInterruptionText: String = "none"
+  @Published var audioSessionRouteChangedText: String = "nil"
+  @Published var handleInterruptionText: String = "nil"
 
   init() {
 
