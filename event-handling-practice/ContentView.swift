@@ -23,6 +23,9 @@ struct ContentView: View {
             Text("interruption:\n").bold() + Text(store.handleInterruptionText)
             Spacer()
           }
+          Button("Open Settings") {
+            UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!)
+          }
         }
         .padding()
       }

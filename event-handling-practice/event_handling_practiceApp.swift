@@ -152,6 +152,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     }
 
+    // パーミッション周り
+
+    print("### AVAudioSession recordPermission:", AVAudioSession.sharedInstance().recordPermission.rawValue)
+    print("### AVCaptureDevice authorization status audio", AVCaptureDevice.authorizationStatus(for: .audio).rawValue)
+    print("### AVCaptureDevice authorization status video", AVCaptureDevice.authorizationStatus(for: .video).rawValue)
+
+
     return true
   }
 
