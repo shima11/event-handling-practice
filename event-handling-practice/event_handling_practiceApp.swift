@@ -74,7 +74,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
           return
         }
 
-      print("routeChangeNotification:", reason)
+      print("### routeChangeNotification:", reason)
 
       // イヤホンのポート一覧（有線、Bluetooth、...）
       let outputPorts: [AVAudioSession.Port] = [
@@ -123,14 +123,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     center.addObserver(forName: AVAudioSession.mediaServicesWereLostNotification, object: nil, queue: nil) { notification in
-
+      print("### AVAudioSession.mediaServicesWereLostNotification:", notification)
     }
     center.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: nil, queue: nil) { notification in
-
+      print("### AVAudioSession.mediaServicesWereResetNotification:", notification)
     }
 
     // 他のアプリで音楽が再生されているかどうか
-    // AVAudioSession.sharedInstance().isOtherAudioPlaying
+    print("### AVAudioSession isOtherAudioPlaying:", AVAudioSession.sharedInstance().isOtherAudioPlaying)
+
     center.addObserver(forName: AVAudioSession.silenceSecondaryAudioHintNotification, object: nil, queue: nil) { notification in
       guard
         let userInfo = notification.userInfo,
@@ -140,16 +141,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
       switch type {
       case .begin:
-        print("silenceSecondaryAudioHintNotification: began")
+        print("### silenceSecondaryAudioHintNotification: began")
       case .end:
-        print("silenceSecondaryAudioHintNotification: end")
+        print("### silenceSecondaryAudioHintNotification: end")
       @unknown default:
         fatalError()
       }
     }
     
     center.addObserver(forName: AVAudioSession.spatialPlaybackCapabilitiesChangedNotification, object: nil, queue: nil) { notification in
-
+      print("### AVAudioSession.spatialPlaybackCapabilitiesChangedNotification:", notification)
     }
 
     // パーミッション周り
